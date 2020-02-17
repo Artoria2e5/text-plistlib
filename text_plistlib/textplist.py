@@ -10,7 +10,6 @@ from semantics import PlistSemantics
 from datetime import datetime
 
 class TextPlistParser:
-
     def __init__(self, use_builtin_types=True, dict_type=dict, encoding='utf-8-sig'):
         self._use_builtin_types = use_builtin_types
         self._dict_type = dict_type

@@ -82,19 +82,21 @@ class PlistParser(Parser):
 
     @tatsumasu()
     def _start_(self):  # noqa
-        with self._group():
-            with self._choice():
-                with self._option():
+        with self._choice():
+            with self._option():
+                with self._group():
 
                     def block1():
                         self._entry_()
                     self._closure(block1)
                     self.name_last_node('s')
-                with self._option():
+                    self._check_eof()
+            with self._option():
+                with self._group():
                     self._value_()
                     self.name_last_node('v')
-                self._error('expecting one of: entry value')
-        self._check_eof()
+                    self._check_eof()
+            self._error('expecting one of: array base64data dict entry hexdata string typed value')
         self.ast._define(
             ['s', 'v'],
             []

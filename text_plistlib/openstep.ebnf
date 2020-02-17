@@ -4,7 +4,9 @@
 @@eol_comments :: ?'//.*?$'
 @@nameguard :: False
 
-start = (s:{ entry } | v:value ) $;
+# s: strings
+# v: vanilla value
+start = (s:{ entry } $) | (v:value $);
 
 entry::Entry = k:string '=' v:value ';';
 
