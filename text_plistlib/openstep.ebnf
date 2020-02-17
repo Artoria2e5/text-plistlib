@@ -1,4 +1,7 @@
 # TatSu EBNF grammar for ASCII OpenStep/GNUStep property lists.
+# @see https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/PropertyLists/OldStylePlists/OldStylePLists.html
+# @see http://www.gnustep.org/resources/documentation/Developer/Base/Reference/NSPropertyList.html
+# @see https://github.com/gnustep/libs-base/blob/master/Source/NSPropertyList.m
 @@grammar::Plist
 @@comments :: ?'/\*.*?\*/'
 @@eol_comments :: ?'//.*?$'
@@ -6,7 +9,7 @@
 
 # s: strings
 # v: vanilla value
-start = (s:{ entry } $) | (v:value $);
+start = (v:value $) | (s:{ entry } $);
 
 entry::Entry = k:string '=' v:value ';';
 
