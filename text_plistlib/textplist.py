@@ -8,6 +8,9 @@ import plistlib
 from pparser import PlistParser
 from semantics import PlistSemantics
 from datetime import datetime
+from enum import Enum
+
+TextPlistDialects = Enum('TextPlistDialects', 'OpenStep GNUstep Ours')
 
 class TextPlistParser:
     def __init__(self, use_builtin_types=True, dict_type=dict, encoding='utf-8-sig'):
@@ -26,8 +29,9 @@ class TextPlistParser:
 class TextPlistWriter:
     def __init__(
             self, file, indent_level=0, indent="\t", sort_keys=True,
-            skipkeys=False, gnustep=True, escape_unicode=False, float_precision=None,
-            strings=False):
+            skipkeys=False, dialect=TextPlistDialects.GNUstep, escape_unicode=False, float_precision=None,
+            fallback=True, strings=False):
+        self.buf = ''
         pass
 
     def _width(indentstr):
@@ -37,12 +41,20 @@ class TextPlistWriter:
         self._write_dict(value)
     
     def _write_value(self, value):
+        if value is None:
+            if self.dialect == TextPlistDialects.Ours:
+                self.buf += ''
+            elif self.fallback:
+                self.buf += 'nil'
+            else:
+                raise #...
+
         if isinstance(value, datetime):
             pass
 
 
 def _is_fmt_text(header):
-    prefixes = (b'{', b'\xEF\xBB\xBF', b'/*', b'//')
+    prefixes = (b'{', b'{', b'\xEF\xBB\xBF', b'/*', b'//')
 
     for pfx in prefixes:
         if header.startswith(pfx):
@@ -58,6 +70,7 @@ FMT_TEXT_HANDLER = {
 
 if __name__ == '__main__':
     import sys
+    from collections import OrderedDict
     if len(sys.argv) > 1:
-        txp = TextPlistParser()
+        txp = TextPlistParser(dict_type=OrderedDict)
         print(txp.parse(open(sys.argv[1])))

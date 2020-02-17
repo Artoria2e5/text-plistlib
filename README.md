@@ -36,7 +36,7 @@ The format of textual plists are quite easy to grasp:
 ```
 
 ### `.strings` files
-`.strings` files are similar to OpenStep plists, except that the outermost dictionary can be skipped, and by convention there is only one level of key-value nesting.
+`.strings` files are similar to OpenStep plist dictionaries, except that the braces are ignored. By convention all keys and values are strings, and the `= value` part can be omitted for a null or empty value.
 
 Extensions
 ----------
@@ -44,6 +44,7 @@ Extensions
 This library accepts the following extensions to textual plists:
 * Custom encoding: historically, plists may be written in a wide variety of encodings. We default to UTF-8, but this is configurable.
 * Trailing commas for arrays: everyone loves trailing commas.
+* Values in collections are nullable. This means that all dictionaries can use the `.strings` extension of `key;` and null elements of arrays can be denoted by commas. In Python they translate to `None`.
 * The top level of dictionary is assumed as in `.strings` files, no matter how complex the inner data structures are. This makes for better config files.
 
 License

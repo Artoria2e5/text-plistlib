@@ -11,11 +11,11 @@
 # v: vanilla value
 start = (v:value $) | (s:{ entry } $);
 
-entry::Entry = k:string '=' v:value ';';
+entry::Entry = k:string [ '=' v:value ] ';';
 
 value = dict | array | string | hexdata | base64data | typed;
 dict::DictType = '{' @:{ entry } '}';
-array::ArrayType = '(' @:','.{ value } [ ',' ]')'; # trailing comma is my extension
+array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # trailing comma is my extension
 hexdata::BinType = '<' @:{ hexpairs } '>';
 base64data::BinType = '<[' @:/[^\]]*/ ']>';
 typed = '<*' @:typed_belly '>';

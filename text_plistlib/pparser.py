@@ -106,9 +106,10 @@ class PlistParser(Parser):
     def _entry_(self):  # noqa
         self._string_()
         self.name_last_node('k')
-        self._token('=')
-        self._value_()
-        self.name_last_node('v')
+        with self._optional():
+            self._token('=')
+            self._value_()
+            self.name_last_node('v')
         self._token(';')
         self.ast._define(
             ['k', 'v'],
@@ -150,7 +151,8 @@ class PlistParser(Parser):
             self._token(',')
 
         def block1():
-            self._value_()
+            with self._optional():
+                self._value_()
         self._gather(block1, sep1)
         self.name_last_node('@')
         with self._optional():
