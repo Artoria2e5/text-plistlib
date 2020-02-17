@@ -25,11 +25,14 @@ class PlistSemantics(object):
         self._dict_type = dict_type
     
     def start(self, ast, _=None):
-        return self.dict(ast)
+        if ast.s is not None:
+            return self.dict(ast.s)
+        elif ast.v is not None:
+            return ast.v
 
     def dict(self, ast, _=None):
         retval = self._dict_type()
-        for entry in ast[0]:
+        for entry in ast:
             retval[entry.k] = entry.v
         return retval
 

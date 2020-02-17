@@ -80,21 +80,25 @@ class PlistParser(Parser):
             **kwargs
         )
 
-    @tatsumasu('DictType')
+    @tatsumasu()
     def _start_(self):  # noqa
         with self._group():
             with self._choice():
                 with self._option():
-                    self._dict_()
-                    self.name_last_node('@')
-                with self._option():
 
-                    def block2():
+                    def block1():
                         self._entry_()
-                    self._closure(block2)
-                    self.add_last_node_to_name('@')
-                self._error('expecting one of: dict entry')
+                    self._closure(block1)
+                    self.name_last_node('s')
+                with self._option():
+                    self._value_()
+                    self.name_last_node('v')
+                self._error('expecting one of: entry value')
         self._check_eof()
+        self.ast._define(
+            ['s', 'v'],
+            []
+        )
 
     @tatsumasu('Entry')
     def _entry_(self):  # noqa
@@ -133,7 +137,7 @@ class PlistParser(Parser):
         def block1():
             self._entry_()
         self._closure(block1)
-        self.add_last_node_to_name('@')
+        self.name_last_node('@')
         self._token('}')
 
     @tatsumasu('ArrayType')

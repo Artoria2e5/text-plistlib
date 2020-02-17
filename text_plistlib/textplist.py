@@ -28,7 +28,7 @@ class TextPlistWriter:
     def __init__(
             self, file, indent_level=0, indent="\t", sort_keys=True,
             skipkeys=False, gnustep=True, escape_unicode=False, float_precision=None,
-            implicit_dict_root=True):
+            strings=False):
         pass
 
     def _width(indentstr):

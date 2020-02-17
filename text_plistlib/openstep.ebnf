@@ -4,12 +4,12 @@
 @@eol_comments :: ?'//.*?$'
 @@nameguard :: False
 
-start::DictType = (@:dict | @+:{ entry }) $;
+start = (s:{ entry } | v:value ) $;
 
 entry::Entry = k:string '=' v:value ';';
 
 value = dict | array | string | hexdata | base64data | typed;
-dict::DictType = '{' @+:{ entry } '}';
+dict::DictType = '{' @:{ entry } '}';
 array::ArrayType = '(' @:','.{ value } [ ',' ]')'; # trailing comma is my extension
 hexdata::BinType = '<' @:{ hexpairs } '>';
 base64data::BinType = '<[' @:/[^\]]*/ ']>';

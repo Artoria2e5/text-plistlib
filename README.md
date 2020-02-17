@@ -1,7 +1,7 @@
 text-plistlib
 =============
 
-A library that parses text plists from OpenStep and GNUstep. Has a [plistlib](https://docs.python.org/3/library/plistlib.html)-style API.
+A library that parses text plists from OpenStep and GNUstep as well as `.strings` files. Has a [plistlib](https://docs.python.org/3/library/plistlib.html)-style API.
 
 Uses a Packrat parser from [tatsu](https://github.com/neogeny/TatSu), because I am too lazy to manually write a recursive descent thing.
 
@@ -16,22 +16,27 @@ The GNUstep project created an extension based on the old ASCII format called `N
 
 The format of textual plists are quite easy to grasp:
 ```plist
-/* Strings can be unquoted, or quoted for C-style escapes */
-"loremIpsum" = "A story about the good, \n the bad \u0000, and the ugly\x2E";
-foo = bar;
-hexdata = <deadbeef>;
-int = <*I3>;
-date = <*D2006-01-02 15:04:05 -0700>;
+{
+    /* Strings can be unquoted, or quoted for C-style escapes */
+    "loremIpsum" = "A story about the good, \n the bad \u0000, and the ugly\x2E";
+    foo = bar;
+    hexdata = <deadbeef>;
+    int = <*I3>;
+    date = <*D2006-01-02 15:04:05 -0700>;
 
-// collection objects
-array = (1, 2, 3);
-object = {
-    a = (1, 2, 3);
-    d = ();
-    e = {};
-    f = <>;
-};
+    // collection objects
+    array = (1, 2, 3);
+    object = {
+        a = (1, 2, 3);
+        d = ();
+        e = {};
+        f = <>;
+    };
+}
 ```
+
+### `.strings` files
+`.strings` files are similar to OpenStep plists, except that the outermost dictionary can be skipped, and by convention there is only one level of key-value nesting.
 
 Extensions
 ----------
