@@ -44,6 +44,7 @@ Extensions
 This library accepts the following extensions to textual plists:
 * Custom encoding: historically, plists may be written in a wide variety of encodings. We default to UTF-8, but this is configurable.
 * Trailing commas for arrays: everyone loves trailing commas.
+* The top level of dictionary is assumed as in `.strings` files, no matter how complex the inner data structures are. This makes for better config files.
 
 License
 -------
