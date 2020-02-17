@@ -1,0 +1,47 @@
+# TatSu EBNF grammar for ASCII OpenStep/GNUStep property lists.
+@@grammar::Plist
+@@comments :: ?'/\*.*?\*/'
+@@eol_comments :: ?'//.*?$'
+@@nameguard :: False
+
+start::DictType = (@:dict | @+:{ entry }) $;
+
+entry::Entry = k:string '=' v:value ';';
+
+value = dict | array | string | hexdata | base64data | typed;
+dict::DictType = '{' @+:{ entry } '}';
+array::ArrayType = '(' @:','.{ value } [ ',' ]')'; # trailing comma is my extension
+hexdata::BinType = '<' @:{ hexpairs } '>';
+base64data::BinType = '<[' @:/[^\]]*/ ']>';
+typed = '<*' @:typed_belly '>';
+
+hexpairs = ?'(?i)([0-9a-f]{2})+';
+
+# gsQuotable 
+safechar = ?'[-#!$%&*+./0-9:?@A-Z^_a-z|~]+';
+
+# string
+string::StringType = (sc:safechar) | ('"' ~ ec:{ qchar } '"' ~);
+
+qchar = r:(/[^"\\]+/) | e:(?'\\' esc_seq);
+esc_seq = ?'[abtrnvf]'
+        | (?'(?i)u' ?'(?i)[0-9a-f]{4}')
+        | (?'x' ?'(?i)[0-9a-f]{2}')
+        | ?'[0-7]{,3}'
+        | ?'.'
+        ;
+
+# GNUStep typed
+number = /[0-9]+/;
+int::int = [ '-' ] number;
+float::float = [ '-' ] ( /(?i)nan/ | /(?i)inf/ |
+    (number [ '.' [number] ] | '.' number) [ 'e' [ '[+-]' number ] ]
+ );
+date::DateType = /[^>]+/;
+
+# Use Regexp here to skip nameguard
+typed_belly = 
+    ?'I' @:int |
+    ?'R' @:float |
+    ?'B' @:?'[YN]' |
+    ?'D' @:date; # 2006-01-02 15:04:05 -0700

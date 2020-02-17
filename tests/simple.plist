@@ -1,0 +1,20 @@
+/* comment */
+"loremIpsum" = "A story about the good, \n the bad \u0000, and the ugly \x2E";
+foo=bar;
+hex = <deadbeef>;
+int = <*I3>;
+date=<*D2006-01-02 15:04:05 -0700>;
+
+// another comment
+array = (1,2,3);
+object = {
+    a = (1, 2, 3);
+    d = ();
+    e = {};
+    f = <>;
+    b = <[]>;
+};
+
+// space/comment permits (GnuStep skipspace)
+hex_space = <de ad /* non-vegan! */ be ef>;
+b64 = <[TG9yZW1JcHN1bQo=]>;
