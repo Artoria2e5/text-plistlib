@@ -8,9 +8,12 @@ import plistlib
 from pparser import PlistParser
 from semantics import PlistSemantics
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
+from typing import List, Dict, TypeVar, Union, Type, Callable, Any
 
-TextPlistDialects = Enum('TextPlistDialects', 'OpenStep GNUstep Ours')
+TextPlistDialects = IntEnum('TextPlistDialects', 'OpenStep GNUstep PyText')
+# Plist types
+T = TypeVar('T', str, bytes, int, float, datetime, dict, list, tuple, plistlib.UID, plistlib.Data, None)
 
 class TextPlistParser:
     def __init__(self, use_builtin_types=True, dict_type=dict, encoding='utf-8-sig'):
@@ -37,20 +40,41 @@ class TextPlistWriter:
     def _width(indentstr):
         return len(indentstr.replace("\t", " " * 8))
     
-    def write(self, value):
-        self._write_dict(value)
+    def _indent(self):
+        self.buf += indent * indent_level
     
-    def _write_value(self, value):
+    def write(self, value):
+        self.write_value(value)
+    
+    def write_none(self, _):
+        if dialect == TextPlistDialects.PyText:
+            self.buf += ''
+        elif self.fallback:
+            self.buf += '""'
+    
+    def write_int\
+
+    def write_value(self, value):
+        self._indent()
         if value is None:
-            if self.dialect == TextPlistDialects.Ours:
-                self.buf += ''
-            elif self.fallback:
-                self.buf += 'nil'
-            else:
-                raise #...
+            self.write_none(value)
 
         if isinstance(value, datetime):
             pass
+    
+    dumpers: Dict[Union[Type[T], None], Callable[[Any, Union[T, None]], None]] = {
+        str: write_string,
+        None: write_none,
+        dict: write_dict,
+        int: write_int,
+        float: write_float,
+        plistlib.UID: write_uid,
+        plistlib.Data: write_data,
+        bytes: write_data,
+        datetime: write_datetime,
+        list: write_list,
+        tuple: write_tuple
+    }
 
 
 def _is_fmt_text(header):

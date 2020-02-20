@@ -5,6 +5,7 @@ Semantic actions for assembling the Plist AST into its Python form.
 """
 from datetime import datetime
 from binascii import a2b_base64
+import plistlib
 one_char_esc = {
     'a': '\a',
     'b': '\b',
@@ -75,6 +76,9 @@ class PlistSemantics(object):
 
     def date(self, ast, _=None):
         return datetime.strptime(ast, "%Y-%m-%d %H:%M:%S %z")
+
+    def uid(self, ast, _=None):
+        return plistlib.UID(ast)
 
     def int(self, ast, _=None):
         return int(''.join(ast))

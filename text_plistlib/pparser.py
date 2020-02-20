@@ -262,6 +262,10 @@ class PlistParser(Parser):
             self._token('-')
         self._number_()
 
+    @tatsumasu()
+    def _uid_(self):  # noqa
+        self._number_()
+
     @tatsumasu('float')
     def _float_(self):  # noqa
         with self._optional():
@@ -294,28 +298,52 @@ class PlistParser(Parser):
 
     @tatsumasu('DateType')
     def _date_(self):  # noqa
-        self._pattern('[^>]+')
+        self._pattern('[^>"]+')
 
     @tatsumasu()
     def _typed_belly_(self):  # noqa
         with self._choice():
             with self._option():
                 self._pattern('I')
+                with self._optional():
+                    self._pattern('"')
                 self._int_()
                 self.name_last_node('@')
+                with self._optional():
+                    self._pattern('"')
+            with self._option():
+                self._pattern('U')
+                with self._optional():
+                    self._pattern('"')
+                self._uid_()
+                self.name_last_node('@')
+                with self._optional():
+                    self._pattern('"')
             with self._option():
                 self._pattern('R')
+                with self._optional():
+                    self._pattern('"')
                 self._float_()
                 self.name_last_node('@')
+                with self._optional():
+                    self._pattern('"')
             with self._option():
                 self._pattern('B')
+                with self._optional():
+                    self._pattern('"')
                 self._pattern('[YN]')
                 self.name_last_node('@')
+                with self._optional():
+                    self._pattern('"')
             with self._option():
                 self._pattern('D')
+                with self._optional():
+                    self._pattern('"')
                 self._date_()
                 self.name_last_node('@')
-            self._error('expecting one of: /B/ /D/ /I/ /R/')
+                with self._optional():
+                    self._pattern('"')
+            self._error('expecting one of: /B/ /D/ /I/ /R/ /U/')
 
 
 class PlistSemantics(object):
@@ -362,6 +390,9 @@ class PlistSemantics(object):
         return ast
 
     def int(self, ast):  # noqa
+        return ast
+
+    def uid(self, ast):  # noqa
         return ast
 
     def float(self, ast):  # noqa

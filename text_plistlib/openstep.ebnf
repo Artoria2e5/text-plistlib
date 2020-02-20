@@ -11,18 +11,23 @@
 # v: vanilla value
 start = (v:value $) | (s:{ entry } $);
 
+# Nullable entries are found in strings files.
+# Since Python has the concept of None, we handle it here differently.
+# http://www.gnustep.org/resources/documentation/Developer/Base/Reference/NSString.html#method$NSString-propertyListFromStringsFileFormat
 entry::Entry = k:string [ '=' v:value ] ';';
 
 value = dict | array | string | hexdata | base64data | typed;
 dict::DictType = '{' @:{ entry } '}';
-array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # trailing comma is my extension
+array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # trailing comma and None values are my extension
 hexdata::BinType = '<' @:{ hexpairs } '>';
-base64data::BinType = '<[' @:/[^\]]*/ ']>';
-typed = '<*' @:typed_belly '>';
+base64data::BinType = '<[' @:/[^\]]*/ ']>'; # gnustep
+typed = '<*' @:typed_belly '>'; # gnustep
 
 hexpairs = ?'(?i)([0-9a-f]{2})+';
 
-# gsQuotable 
+# gsQuotable
+# . (\x2E) is accepted when reading, but Apple CF quotes it when writing.
+# That might have something to do with plutil's keypath.
 safechar = ?'[-#!$%&*+./0-9:?@A-Z^_a-z|~]+';
 
 # string
@@ -39,14 +44,17 @@ esc_seq = ?'[abtrnvf]'
 # GNUStep typed
 number = /[0-9]+/;
 int::int = [ '-' ] number;
+uid = number;
 float::float = [ '-' ] ( /(?i)nan/ | /(?i)inf/ |
     (number [ '.' [number] ] | '.' number) [ 'e' [ '[+-]' number ] ]
  );
-date::DateType = /[^>]+/;
+date::DateType = /[^>"]+/;
 
 # Use Regexp here to skip nameguard
+# Quoted values are tolerated by GNUstep
 typed_belly = 
-    ?'I' @:int |
-    ?'R' @:float |
-    ?'B' @:?'[YN]' |
-    ?'D' @:date; # 2006-01-02 15:04:05 -0700
+    ?'I' [?'"'] @:int [?'"'] |
+    ?'U' [?'"'] @:uid [?'"'] | # go-plist extension
+    ?'R' [?'"'] @:float [?'"'] |
+    ?'B' [?'"'] @:?'[YN]' [?'"'] |
+    ?'D' [?'"'] @:date [?'"'] ; # 2006-01-02 15:04:05 -0700
