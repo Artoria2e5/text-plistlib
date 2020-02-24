@@ -15,7 +15,7 @@ import binascii
 
 TextPlistDialects = IntEnum('TextPlistDialects', 'OpenStep GNUstep PyText')
 # Plist types
-T = TypeVar('T', str, bytes, int, float, datetime, dict, list, tuple, plistlib.UID, plistlib.Data)
+T = TypeVar('T', str, bytes, int, float, datetime, dict, list, tuple, plistlib.UID, plistlib.Data, bool)
 
 class TextPlistParser:
     def __init__(self, use_builtin_types=True, dict_type=dict, cfuid=True, encoding='utf-8-sig'):
@@ -59,7 +59,7 @@ class TextPlistWriter:
             self.write_value(value, top=True)
     
     def write_none(self, _,):
-        if dialect == TextPlistDialects.PyText:
+        if self.dialect == TextPlistDialects.PyText:
             self.buf += ''
         elif self.fallback:
             self.buf += '""'
@@ -67,19 +67,19 @@ class TextPlistWriter:
             raise TypeError("None is not directly representable in dialect {f!s}.".format(f=self.dialect))
 
     def write_uid(self, val):
-        if dialect == TextPlistDialects.PyText:
+        if self.dialect == TextPlistDialects.PyText:
             self.buf += '<*U%d>' % val.data
         else:
             self.write_dict({'CF$UID': int(val.data)})
     
     def write_int(self, val):
-        if dialect >= TextPlistDialects.GNUstep:
+        if self.dialect >= TextPlistDialects.GNUstep:
             self.buf += '<*I%d>' % val
         else:
             self.buf += '%d' % val
     
     def write_float(self, val):
-        if dialect >= TextPlistDialects.GNUstep:
+        if self.dialect >= TextPlistDialects.GNUstep:
             self.buf += '<*R{v}>'.format(v=val)
         else:
             self.buf += str(val)
@@ -87,7 +87,7 @@ class TextPlistWriter:
     def write_data(self, val):
         if isinstance(val, plistlib.Data):
             val = val.data
-        if dialect >= TextPlistDialects.GNUstep:
+        if self.dialect >= TextPlistDialects.GNUstep:
             self.buf += '<['
             self.buf += binascii.b2a_base64(val).decode('ascii')
             self.buf += ']>'
@@ -100,7 +100,7 @@ class TextPlistWriter:
         if self.utc:
             val = val.astimezone(timezone.utc)
         formatted = val.strftime("%Y-%m-%d %H:%M:%S %z")
-        if dialect >= TextPlistDialects.GNUstep:
+        if self.dialect >= TextPlistDialects.GNUstep:
             self.buf += '<*D'
             self.buf += formatted
             self.buf += '>'
@@ -139,6 +139,14 @@ class TextPlistWriter:
         self.indent_level -= 1
         self._indent()
         buf += ')'
+    
+    def write_bool(self, val):
+        if self.dialect >= TextPlistDialects.GNUstep:
+            self.buf += '<*B'
+            self.buf += 'Y' if val else 'N'
+            self.buf += '>'
+        else:
+            self.buf += str(val)
 
     def write_value(self, val):
         if val is None:
@@ -155,6 +163,7 @@ class TextPlistWriter:
 
     dumpers: Dict[Type[T], Callable[[Any, T], None]] = OrderedDict([
         (str, "write_string"),
+        (bool, "write_bool")
         (int, "write_int"),
         (float, "write_float"),
         (bytes, "write_data"),

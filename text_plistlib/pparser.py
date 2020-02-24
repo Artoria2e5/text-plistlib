@@ -301,6 +301,10 @@ class PlistParser(Parser):
         self._pattern('[^>"]+')
 
     @tatsumasu()
+    def _bool_(self):  # noqa
+        self._pattern('[YN]')
+
+    @tatsumasu()
     def _typed_belly_(self):  # noqa
         with self._choice():
             with self._option():
@@ -331,7 +335,7 @@ class PlistParser(Parser):
                 self._pattern('B')
                 with self._optional():
                     self._pattern('"')
-                self._pattern('[YN]')
+                self._bool_()
                 self.name_last_node('@')
                 with self._optional():
                     self._pattern('"')
@@ -399,6 +403,9 @@ class PlistSemantics(object):
         return ast
 
     def date(self, ast):  # noqa
+        return ast
+
+    def bool(self, ast):  # noqa
         return ast
 
     def typed_belly(self, ast):  # noqa

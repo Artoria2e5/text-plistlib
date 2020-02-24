@@ -84,10 +84,13 @@ class PlistSemantics(object):
         return plistlib.UID(ast)
 
     def int(self, ast, _=None):
-        return int(''.join(ast))
+        return int(ast)
 
     def float(self, ast, _=None):
-        return float(''.join(ast))
+        return float(ast)
+    
+    def bool(self, ast, _=None):
+        return ast == 'Y'
     
     def _default(self, ast, _=None):
         return ast

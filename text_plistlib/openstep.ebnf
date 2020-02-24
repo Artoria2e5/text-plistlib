@@ -49,6 +49,7 @@ float::float = [ '-' ] ( /(?i)nan/ | /(?i)inf/ |
     (number [ '.' [number] ] | '.' number) [ 'e' [ '[+-]' number ] ]
  );
 date::DateType = /[^>"]+/;
+bool = ?'[YN]';
 
 # Use Regexp here to skip nameguard
 # Quoted values are tolerated by GNUstep
@@ -56,5 +57,5 @@ typed_belly =
     ?'I' [?'"'] @:int [?'"'] |
     ?'U' [?'"'] @:uid [?'"'] | # my extension
     ?'R' [?'"'] @:float [?'"'] |
-    ?'B' [?'"'] @:?'[YN]' [?'"'] |
+    ?'B' [?'"'] @:bool [?'"'] |
     ?'D' [?'"'] @:date [?'"'] ; # 2006-01-02 15:04:05 -0700
