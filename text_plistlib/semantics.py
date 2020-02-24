@@ -21,9 +21,10 @@ def _unsur(s):
     return s.encode('utf-16', 'surrogatepass').decode('utf-16', 'surrogatepass')
 
 class PlistSemantics(object):
-    def __init__(self, use_builtin_types=True, dict_type=dict):
+    def __init__(self, use_builtin_types=True, dict_type=dict, cfuid=True):
         self._use_builtin_types = use_builtin_types
         self._dict_type = dict_type
+        self.cfuid = cfuid
     
     def start(self, ast, _=None):
         if ast.s is not None:
@@ -35,6 +36,8 @@ class PlistSemantics(object):
         retval = self._dict_type()
         for entry in ast:
             retval[entry.k] = entry.v
+        if self.cfuid and len(retval) == 1 and isinstance(retval.get("CF$UID"), int):
+            return plistlib.UID(retval["CF$UID"])
         return retval
 
     def array(self, ast, _=None):

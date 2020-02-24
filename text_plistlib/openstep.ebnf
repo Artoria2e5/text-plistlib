@@ -18,7 +18,7 @@ entry::Entry = k:string [ '=' v:value ] ';';
 
 value = dict | array | string | hexdata | base64data | typed;
 dict::DictType = '{' @:{ entry } '}';
-array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # trailing comma and None values are my extension
+array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # None value is my extension.
 hexdata::BinType = '<' @:{ hexpairs } '>';
 base64data::BinType = '<[' @:/[^\]]*/ ']>'; # gnustep
 typed = '<*' @:typed_belly '>'; # gnustep
@@ -54,7 +54,7 @@ date::DateType = /[^>"]+/;
 # Quoted values are tolerated by GNUstep
 typed_belly = 
     ?'I' [?'"'] @:int [?'"'] |
-    ?'U' [?'"'] @:uid [?'"'] | # go-plist extension
+    ?'U' [?'"'] @:uid [?'"'] | # my extension
     ?'R' [?'"'] @:float [?'"'] |
     ?'B' [?'"'] @:?'[YN]' [?'"'] |
     ?'D' [?'"'] @:date [?'"'] ; # 2006-01-02 15:04:05 -0700
