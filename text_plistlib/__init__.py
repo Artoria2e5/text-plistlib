@@ -7,8 +7,9 @@ import binascii
 import plistlib
 from collections import OrderedDict
 from datetime import datetime, timezone
-from enum import IntEnum
-from typing import IO, TypeVar
+from enum import Enum, IntEnum
+from types import FunctionType, ModuleType
+from typing import IO, Optional, TypeVar
 
 from .pparser import PlistParser
 from .semantics import PlistSemantics
@@ -33,7 +34,11 @@ T = TypeVar(
 
 class TextPlistParser:
     def __init__(
-        self, use_builtin_types=True, dict_type=dict, cfuid=True, encoding="utf-8-sig"
+        self,
+        use_builtin_types: bool = True,
+        dict_type=dict,
+        cfuid: bool = True,
+        encoding: str = "utf-8-sig",
     ):
         self.use_builtin_types = use_builtin_types
         self.dict_type = dict_type
@@ -57,19 +62,29 @@ class TextPlistParser:
 class TextPlistWriter:
     def __init__(
         self,
-        file,
-        indent_level=0,
-        indent="\t",
-        sort_keys=True,
-        skipkeys=False,
-        dialect=TextPlistDialects.GNUstep,
-        escape_unicode=False,
-        float_precision=None,
-        fallback=True,
-        strings=False,
-        utc=True,
+        file: IO,
+        indent_level: int = 0,
+        indent: str = "\t",
+        sort_keys: bool = True,
+        skipkeys: bool = False,
+        dialect: TextPlistDialects = TextPlistDialects.GNUstep,
+        escape_unicode: bool = False,
+        float_precision: Optional[int] = None,
+        fallback: bool = True,
+        strings: bool = False,
+        utc: bool = True,
     ):
-        self.buf = ""
+        """
+        Text Plist Writer.
+
+        :param dialect: Which dialect to use.
+        :param escape_unicode: Whether to escape every non-ASCII character, not
+        just the unprintable ones.
+        :param fallback: Whether to write not-really-exact values when the
+        format does not support serializing something.
+        :param strings: Whether we are writng a strings file.
+        """
+        self.fp = file
         self.indent_level = 0
         self.indent = indent
         self.sort_keys = sort_keys
@@ -82,9 +97,10 @@ class TextPlistWriter:
         return len(indentstr.replace("\t", " " * 8))
 
     def _indent(self):
-        self.buf += self.indent * self.indent_level
+        self.fp.write(self.indent * self.indent_level)
 
     def write(self, value):
+        """Write the value into the file IO."""
         if self.strings and isinstance(value, dict):
             self.write_dict(value, strings_top=True)
         else:
@@ -95,9 +111,9 @@ class TextPlistWriter:
         _,
     ):
         if self.dialect == TextPlistDialects.PyText:
-            self.buf += ""
+            self.fp.write("")
         elif self.fallback:
-            self.buf += '""'
+            self.fp.write('""')
         else:
             raise TypeError(
                 "None is not directly representable in dialect {f!s}.".format(
@@ -107,51 +123,51 @@ class TextPlistWriter:
 
     def write_uid(self, val):
         if self.dialect == TextPlistDialects.PyText:
-            self.buf += "<*U%d>" % val.data
+            self.fp.write("<*U%d>" % val.data)
         else:
             self.write_dict({"CF$UID": int(val.data)})
 
     def write_int(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.buf += "<*I%d>" % val
+            self.fp.write("<*I%d>" % val)
         else:
-            self.buf += "%d" % val
+            self.fp.write("%d" % val)
 
     def write_float(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.buf += "<*R{v}>".format(v=val)
+            self.fp.write("<*R{v}>".format(v=val))
         else:
-            self.buf += str(val)
+            self.fp.write(str(val))
 
     def write_data(self, val):
         if isinstance(val, plistlib.Data):
             val = val.data
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.buf += "<["
-            self.buf += binascii.b2a_base64(val).decode("ascii")
-            self.buf += "]>"
+            self.fp.write("<[")
+            self.fp.write(binascii.b2a_base64(val).decode("ascii"))
+            self.fp.write("]>")
         else:
-            self.buf += "<"
-            self.buf += val.hex(" ", -4)
-            self.buf += ">"
+            self.fp.write("<")
+            self.fp.write(val.hex(" ", -4))
+            self.fp.write(">")
 
     def write_datetime(self, val):
         if self.utc:
             val = val.astimezone(timezone.utc)
         formatted = val.strftime("%Y-%m-%d %H:%M:%S %z")
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.buf += "<*D"
-            self.buf += formatted
-            self.buf += ">"
+            self.fp.write("<*D")
+            self.fp.write(formatted)
+            self.fp.write(">")
         else:
-            self.buf += formatted
+            self.fp.write(formatted)
 
     def write_dict(self, val, strings_top=False):
         keys = val.keys()
         if self.sort_keys:
             keys = sorted(keys)
         if not strings_top:
-            self.buf += "{\n"
+            self.fp.write("{\n")
             self.indent_level += 1
         for k in keys:
             v = val[k]
@@ -160,32 +176,32 @@ class TextPlistWriter:
             if v is None and (self.dialect == TextPlistDialects.PyText or strings_top):
                 pass
             else:
-                self.buf += " = "
+                self.fp.write(" = ")
                 self.write_value(v)
-            self.buf += ";\n"
+            self.fp.write(";\n")
         if not strings_top:
             self.indent_level -= 1
             self._indent()
-            self.buf += "}"
+            self.fp.write("}")
 
     def write_list(self, val):
-        self.buf += "(\n"
+        self.fp.write("(\n")
         self.indent_level += 1
         for v in val:
             self._indent()
             self.write_value(v)
-            self.buf += ",\n"
+            self.fp.write(",\n")
         self.indent_level -= 1
         self._indent()
-        self.buf += ")"
+        self.fp.write(")")
 
     def write_bool(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.buf += "<*B"
-            self.buf += "Y" if val else "N"
-            self.buf += ">"
+            self.fp.write("<*B")
+            self.fp.write("Y" if val else "N")
+            self.fp.write(">")
         else:
-            self.buf += str(val)
+            self.fp.write(str(val))
 
     def write_value(self, val):
         if val is None:
@@ -193,7 +209,7 @@ class TextPlistWriter:
         else:
             method = TextPlistWriter.dumpers.get(type(val))
             if method is None:
-                for k, v in TextPlistWriter.dumpers:
+                for k, v in TextPlistWriter.dumpers.items():
                     if isinstance(val, k):
                         method = v
                         break
@@ -223,7 +239,7 @@ class TextPlistWriter:
     )
 
 
-def _is_fmt_text(header):
+def _is_fmt_text(header: bytes) -> bool:
     prefixes = (b"{", b"{", b"/*", b"//")
 
     for pfx in prefixes:
@@ -233,7 +249,7 @@ def _is_fmt_text(header):
     return (
         not header.startswith(b"<?xml")
         and not header.startswith(b"<plist")
-        and "=" in header
+        and b"=" in header
     )
 
 
@@ -244,12 +260,11 @@ FMT_TEXT_HANDLER = {
 }
 
 
-def patch(plistlib):
-    """Monkey patch the plistlib module passed in. Things could go very wrong..."""
-    import enum
-    from types import FunctionType
-
-    PF = enum.Enum("PlistFormat", "FMT_XML FMT_BINARY FMT_TEXT", module=__name__)
+def patch(plistlib: ModuleType) -> ModuleType:
+    """
+    Monkey patch the plistlib module passed in. Things could go very wrong...
+    """
+    PF = Enum("PlistFormat", "FMT_XML FMT_BINARY FMT_TEXT", module=__name__)
 
     plistlib._FORMATS = {
         PF.FMT_XML: plistlib._FORMATS[plistlib.FMT_XML],
@@ -265,13 +280,13 @@ def patch(plistlib):
     plistlib.PlistFormat = PF
     plistlib.__dict__.update(PF.__members__)
 
-    for _, f in plistlib.__dict__:
+    for _, f in plistlib.__dict__.items():
         if isinstance(f, FunctionType):
             if f.__defaults__ is not None:
                 f.__defaults__ = tuple(translation.get(x, x) for x in f.__defaults__)
             if f.__kwdefaults__ is not None:
                 f.__kwdefaults__ = {
-                    k: translation.get(v, v) for k, v in f.__kwdefaults__
+                    k: translation.get(v, v) for k, v in f.__kwdefaults__.items()
                 }
 
     return plistlib
