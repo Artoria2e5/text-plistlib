@@ -3,8 +3,8 @@
 """
 Semantic actions for assembling the Plist AST into its Python form.
 """
-from datetime import datetime
 from binascii import a2b_base64
+from datetime import datetime
 from plistlib import UID, Data
 
 one_char_esc = {

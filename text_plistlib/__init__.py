@@ -3,15 +3,15 @@
 """
 The parser and writer classes for text plists. Implements a format for plistlib.
 """
+import binascii
 import plistlib
-from .pparser import PlistParser
-from .semantics import PlistSemantics
+from collections import OrderedDict
 from datetime import datetime, timezone
 from enum import IntEnum
-from typing import TypeVar
-from collections import OrderedDict
-import binascii
-from io import TextIOBase
+from typing import IO, TypeVar
+
+from .pparser import PlistParser
+from .semantics import PlistSemantics
 
 TextPlistDialects = IntEnum("TextPlistDialects", "OpenStep GNUstep PyText")
 # Plist types
@@ -40,7 +40,7 @@ class TextPlistParser:
         self.cfuid = cfuid
         self.encoding = encoding
 
-    def parse(self, fp: TextIOBase) -> T:
+    def parse(self, fp: IO) -> T:
         parser = PlistParser()
         data = fp.read()
         if isinstance(data, bytes):
@@ -86,7 +86,7 @@ class TextPlistWriter:
 
     def write(self, value):
         if self.strings and isinstance(value, dict):
-            self.write_dict(value, stringstop=True)
+            self.write_dict(value, strings_top=True)
         else:
             self.write_value(value)
 
@@ -146,24 +146,24 @@ class TextPlistWriter:
         else:
             self.buf += formatted
 
-    def write_dict(self, val, stringstop=False):
+    def write_dict(self, val, strings_top=False):
         keys = val.keys()
         if self.sort_keys:
             keys = sorted(keys)
-        if not stringstop:
+        if not strings_top:
             self.buf += "{\n"
             self.indent_level += 1
         for k in keys:
             v = val[k]
             self._indent()
             self.write_string(k)
-            if v is None and (self.dialect == TextPlistDialects.PyText or stringstop):
+            if v is None and (self.dialect == TextPlistDialects.PyText or strings_top):
                 pass
             else:
                 self.buf += " = "
                 self.write_value(v)
             self.buf += ";\n"
-        if not stringstop:
+        if not strings_top:
             self.indent_level -= 1
             self._indent()
             self.buf += "}"
