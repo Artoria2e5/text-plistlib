@@ -10,16 +10,20 @@ try:
 except IOError:
     long_description = ""
 
+
 def with_default(f, exception, default):
     def realfun(*args, **kwargs):
         try:
             return f(*args, **kwargs)
-        except exception as ex:
+        except exception:
             return default
+
     return realfun
 
-new_mtime = with_default(os.path.getmtime, FileNotFoundError, float('+inf'))
-old_mtime = with_default(os.path.getmtime, FileNotFoundError, float('-inf'))
+
+new_mtime = with_default(os.path.getmtime, FileNotFoundError, float("+inf"))
+old_mtime = with_default(os.path.getmtime, FileNotFoundError, float("-inf"))
+
 
 def make_rule(source, target):
     def realdec(f):
@@ -28,22 +32,28 @@ def make_rule(source, target):
             targettime = min(map(old_mtime, target))
             if sourcetime > targettime:
                 return f(*args, **kwargs)
+
         return realfun
+
     return realdec
 
-PARSER = 'text_plistlib/pparser.py'
-GRAMMAR = 'text_plistlib/openstep.ebnf'
+
+PARSER = "text_plistlib/pparser.py"
+GRAMMAR = "text_plistlib/openstep.ebnf"
+
 
 @make_rule([GRAMMAR], [PARSER])
 def build_parser():
     import tatsu
-    grammar = open('text_plistlib/openstep.ebnf').read()
-    with open(PARSER, 'w') as f:
+
+    grammar = open("text_plistlib/openstep.ebnf").read()
+    with open(PARSER, "w") as f:
         f.write(tatsu.to_python_sourcecode(grammar, filename=PARSER))
+
 
 build_parser()
 
-if __name__ == '__main__' and len(sys.argv) > 1 and sys.argv[1] == 'tatsu':
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "tatsu":
     exit(0)
 
 setup(
@@ -53,11 +63,11 @@ setup(
     license="MIT",
     author="Mingye Wang",
     packages=find_packages(),
-    install_requires=['tatsu'],
+    install_requires=["tatsu"],
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-    ]
+    ],
 )
