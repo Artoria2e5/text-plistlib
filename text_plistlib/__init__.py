@@ -141,8 +141,9 @@ class TextPlistWriter:
 
     def write_data(self, val):
         if isinstance(val, plistlib.Data):
-            val = val.data
-        if self.dialect >= TextPlistDialects.GNUstep:
+            val: bytes = val.data
+        # break-even at 3 and 4
+        if self.dialect >= TextPlistDialects.GNUstep and len(val) < 5:
             self.fp.write("<[")
             self.fp.write(binascii.b2a_base64(val).decode("ascii"))
             self.fp.write("]>")
