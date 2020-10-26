@@ -247,6 +247,7 @@ FMT_TEXT_HANDLER = {
 def patch(plistlib):
     """Monkey patch the plistlib module passed in. Things could go very wrong..."""
     import enum
+    from types import FunctionType
     PF = enum.Enum('PlistFormat', 'FMT_XML FMT_BINARY FMT_TEXT', module=__name__)
 
     plistlib._FORMATS = {
@@ -255,10 +256,18 @@ def patch(plistlib):
         PF.FMT_TEXT: FMT_TEXT_HANDLER,
     }
 
+    translation = {
+        plistlib.FMT_XML: PF.FMT_XML,
+        plistlib.FMT_BINARY: PF.FMT_BINARY,
+    }
+
     plistlib.PlistFormat = PF
     plistlib.__dict__.update(PF.__members__)
 
-    # TODO: replace default vals in {load,dump}{,s} by __defaults__ wrigging
+    for _, f in plistlib.__dict__:
+        if isinstance(f, FunctionType):
+            f.__defaults__ = tuple(translation.get(x, x) for x in f.__defaults__)
+            f.__kwdefaults__ = {k: translation.get(v, v) for k, v in f.__kwdefaults__}
 
     return plistlib
 
