@@ -36,7 +36,7 @@ The format of textual plists are quite easy to grasp:
 ```
 
 ### `.strings` files
-`.strings` files are similar to OpenStep plist dictionaries, except that the braces are ignored. By convention all values are strings, and the `= value` part can be omitted for a null or empty value.
+`.strings` files are similar to OpenStep plist dictionaries, except that the braces are omitted. By convention all values are strings, and the `= value` part can be omitted for a null or empty value.
 
 Extensions
 ----------

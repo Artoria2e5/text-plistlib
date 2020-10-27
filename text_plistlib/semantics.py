@@ -5,7 +5,7 @@ Semantic actions for assembling the Plist AST into its Python form.
 """
 from binascii import a2b_base64
 from datetime import datetime
-from plistlib import UID, Data
+from plistlib import UID
 
 one_char_esc = {
     "a": "\a",
@@ -24,8 +24,7 @@ def _unsur(s: str) -> str:
 
 
 class PlistSemantics(object):
-    def __init__(self, use_builtin_types=True, dict_type=dict, cfuid=True):
-        self._use_builtin_types = use_builtin_types
+    def __init__(self, dict_type=dict, cfuid=True):
         self._dict_type = dict_type
         self.cfuid = cfuid
 
@@ -51,11 +50,11 @@ class PlistSemantics(object):
 
     def hexdata(self, ast, _=None):
         data = bytes.fromhex("".join(ast))
-        return data if self._use_builtin_types else Data(data)
+        return data
 
     def base64data(self, ast, _=None):
         data = a2b_base64(ast)
-        return data if self._use_builtin_types else Data(data)
+        return data
 
     def string(self, ast, _=None):
         if ast.sc:
