@@ -18,7 +18,7 @@ from enum import Enum
 from io import BytesIO
 from typing import BinaryIO
 
-from .impl import FMT_TEXT_HANDLER, T
+from .impl import FMT_TEXT_HANDLER, TextPlistTypes
 
 UID = pl.UID
 InvalidFileException = pl.InvalidFileException
@@ -31,7 +31,7 @@ translation = {
 }
 
 
-def load(fp: BinaryIO, *, fmt=None, **kwargs) -> T:
+def load(fp: BinaryIO, *, fmt=None, **kwargs) -> TextPlistTypes:
     """Read a .plist file (forwarding all arguments)."""
     if fmt is None:
         header = fp.read(32)
@@ -46,20 +46,37 @@ def load(fp: BinaryIO, *, fmt=None, **kwargs) -> T:
         return pl.load(fp, fmt=translation[fmt], **kwargs)
 
 
-def loads(value: bytes, **kwargs) -> T:
-    """Read a .plist file from a bytes object."""
+def loads(value: bytes, **kwargs) -> TextPlistTypes:
+    """
+    Read a .plist file from a bytes object.
+
+    >>> loads(b'{4=1;}', fmt=FMT_TEXT)
+    {'4': '1'}
+    """
     return load(BytesIO(value), **kwargs)
 
 
-def dump(value: T, fp, *, fmt=PF.FMT_TEXT, **kwargs):
+def dump(value: TextPlistTypes, fp, *, fmt=PF.FMT_TEXT, **kwargs):
     if fmt == PF.FMT_TEXT:
-        FMT_TEXT_HANDLER["writer"](fp, **kwargs)
+        writer = FMT_TEXT_HANDLER["writer"](fp, **kwargs)
+        writer.write(value)
     else:
         # ignore type -- let the real plistlib complain about None :)
         return pl.dump(value, fp, fmt=translation.get(fmt), **kwargs)  # type: ignore
 
 
-def dumps(value: T, **kwargs) -> bytes:
+def dumps(value: TextPlistTypes, **kwargs) -> bytes:
+    """
+    >>> dumps({ "1": [2,3,4,None,5] })
+    b'{\n\t"1" = (\n\t\t<*I2>,\n\t\t<*I3>,\n\t\t<*I4>,\n\t\t"",\n\t\t<*I5>,\n\t);\n}'
+    """
     fp = BytesIO()
     dump(value, fp, **kwargs)
     return fp.getvalue()
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        print(dumps(eval(sys.argv[1])))

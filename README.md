@@ -45,6 +45,7 @@ This library accepts the following extensions to textual plists:
 * Custom encoding: historically, plists may be written in a wide variety of encodings. We default to UTF-8, but this is configurable.
 * Trailing commas for arrays: everyone loves trailing commas. Seems to be in GNUstep and Apple.
 * Values in collections are nullable. This means that all dictionaries can use the `.strings` extension of `key;` and null elements of arrays can be denoted by commas. In Python they translate to `None`.
+  * On a second thought, it does make more sense to use something like `<*N>` instead of the JavaScript-like handling of array gaps.
 * UID. Unsigned values of the `plistlib.UID` classes are serialized in the dialect as `<*U12345>`. In other dialects, they are encoded as `{ "CF$UID" = <*I12345> }`.
 * The top level of dictionary is assumed as in `.strings` files, no matter how complex the inner data structures are. This makes for better config files.
 

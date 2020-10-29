@@ -16,8 +16,7 @@ from .semantics import PlistSemantics
 Data = plistlib.__dict__.get("Data", None)
 UID = plistlib.UID
 TextPlistDialects = IntEnum("TextPlistDialects", "OpenStep GNUstep PyText")
-# Plist types
-T = Union[str, bytes, int, float, datetime, dict, list, tuple, UID, bool]
+TextPlistTypes = Union[str, bytes, int, float, datetime, dict, list, tuple, UID, bool]
 
 
 class TextPlistParser:
@@ -32,7 +31,7 @@ class TextPlistParser:
         self.cfuid = cfuid
         self.encoding = encoding
 
-    def parse(self, fp: IO) -> T:
+    def parse(self, fp: IO) -> TextPlistTypes:
         parser = PlistParser()
         data = fp.read()
         if isinstance(data, bytes):
@@ -50,7 +49,7 @@ class TextPlistWriter:
         file: IO,
         *,
         indent_level: int = 0,
-        indent: str = "\t",
+        indent: bytes = b"\t",
         sort_keys: bool = True,
         skipkeys: bool = False,
         dialect: TextPlistDialects = TextPlistDialects.GNUstep,
@@ -101,9 +100,9 @@ class TextPlistWriter:
         _,
     ):
         if self.dialect == TextPlistDialects.PyText:
-            self.fp.write("")
+            self.fp.write(b"")
         elif self.fallback:
-            self.fp.write('""')
+            self.fp.write(b'""')
         else:
             raise TypeError(
                 "None is not directly representable in dialect {f!s}.".format(
@@ -116,23 +115,23 @@ class TextPlistWriter:
         # Anyway, let's cheat and use the JSON encoder. What can go wrong?
         import json
 
-        self.fp.write(json.dumps(s, ensure_ascii=self.escape_unicode))
+        self.fp.write(json.dumps(s, ensure_ascii=self.escape_unicode).encode("utf-8"))
 
     def write_uid(self, val):
         if self.dialect == TextPlistDialects.PyText:
-            self.fp.write("<*U%d>" % val.data)
+            self.fp.write(b"<*U%d>" % val.data)
         else:
-            self.write_dict({"CF$UID": int(val.data)})
+            self.write_dict({b"CF$UID": int(val.data)})
 
     def write_int(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.fp.write("<*I%d>" % val)
+            self.fp.write(b"<*I%d>" % val)
         else:
-            self.fp.write("%d" % val)
+            self.fp.write(b"%d" % val)
 
     def write_float(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.fp.write("<*R{v}>".format(v=val))
+            self.fp.write(b"<*R{v}>".format(v=val))
         else:
             self.fp.write(str(val))
 
@@ -142,22 +141,22 @@ class TextPlistWriter:
             val: bytes = val.data
         # break-even at 3 and 4
         if self.dialect >= TextPlistDialects.GNUstep and len(val) < 5:
-            self.fp.write("<[")
-            self.fp.write(binascii.b2a_base64(val).decode("ascii"))
-            self.fp.write("]>")
+            self.fp.write(b"<[")
+            self.fp.write(binascii.b2a_base64(val))
+            self.fp.write(b"]>")
         else:
-            self.fp.write("<")
-            self.fp.write(val.hex(" ", -4))
-            self.fp.write(">")
+            self.fp.write(b"<")
+            self.fp.write(val.hex(" ", -4).encode("ascii"))
+            self.fp.write(b">")
 
     def write_datetime(self, val):
         if self.utc:
             val = val.astimezone(timezone.utc)
-        formatted = val.strftime("%Y-%m-%d %H:%M:%S %z")
+        formatted = val.strftime("%Y-%m-%d %H:%M:%S %z").encode("ascii")
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.fp.write("<*D")
+            self.fp.write(b"<*D")
             self.fp.write(formatted)
-            self.fp.write(">")
+            self.fp.write(b">")
         else:
             self.fp.write(formatted)
 
@@ -166,11 +165,11 @@ class TextPlistWriter:
         if self.sort_keys:
             keys = sorted(keys)
         if not strings_top:
-            self.fp.write("{\n")
+            self.fp.write(b"{\n")
             self.indent_level += 1
         for k in keys:
             if not isinstance(k, str):
-                if self._skipkeys:
+                if self.skipkeys:
                     continue
                 raise TypeError("keys must be strings")
             v = val[k]
@@ -179,53 +178,51 @@ class TextPlistWriter:
             if v is None and (self.dialect == TextPlistDialects.PyText or strings_top):
                 pass
             else:
-                self.fp.write(" = ")
+                self.fp.write(b" = ")
                 self.write_value(v)
-            self.fp.write(";\n")
+            self.fp.write(b";\n")
         if not strings_top:
             self.indent_level -= 1
             self._indent()
-            self.fp.write("}")
+            self.fp.write(b"}")
 
     def write_list(self, val):
-        self.fp.write("(\n")
+        self.fp.write(b"(\n")
         self.indent_level += 1
         for v in val:
             self._indent()
             self.write_value(v)
-            self.fp.write(",\n")
+            self.fp.write(b",\n")
         self.indent_level -= 1
         self._indent()
-        self.fp.write(")")
+        self.fp.write(b")")
 
     def write_bool(self, val):
         if self.dialect >= TextPlistDialects.GNUstep:
-            self.fp.write("<*B")
-            self.fp.write("Y" if val else "N")
-            self.fp.write(">")
+            self.fp.write(b"<*B")
+            self.fp.write(b"Y" if val else b"N")
+            self.fp.write(b">")
         else:
             self.fp.write(str(val))
 
-    def write_value(self, val):
+    def write_value(self, val) -> None:
         if val is None:
-            self.write_none(self)
-        else:
-            method = TextPlistWriter.dumpers.get(type(val))
-            if method is None:
-                for k, v in TextPlistWriter.dumpers.items():
-                    if isinstance(val, k):
-                        method = v
-                        break
-                else:
-                    raise TypeError(
-                        "{val!r} is not directly representable in a plist.".format(
-                            val=val
-                        )
-                    )
-            getattr(self, method)(self, val)
+            return self.write_none(self)
+
+        method = self.dumpers.get(type(val))
+        if method is None:
+            for t, m in self.dumpers.items():
+                if isinstance(val, t):
+                    method = m
+                    break
+            else:
+                raise TypeError(
+                    "{val!r} is not directly representable in a plist.".format(val=val)
+                )
+        return getattr(self, method)(val)
 
     global Data
-    # Dict[Type[T], Callable[[Any, T], None]]
+    # Dict[Type[T], Callable[[Any, T], None]] where T <: TextPlistTypes
     dumpers = OrderedDict(
         [
             (str, "write_string"),
