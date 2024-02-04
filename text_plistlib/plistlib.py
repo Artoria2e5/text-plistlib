@@ -1,7 +1,7 @@
 """
 Wrapper providing a plistlib interface. Better than a patch?
 """
-__all__ = [
+__all__ = [  # noqa: F822
     "InvalidFileException",
     "FMT_XML",
     "FMT_BINARY",

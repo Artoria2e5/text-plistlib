@@ -1,5 +1,6 @@
-// Null values
+// Null values and trailing comma
 {
     a;
-    b = (,);
+    b = (<*N>);
+    c = (<*N>,3 ,)
 }

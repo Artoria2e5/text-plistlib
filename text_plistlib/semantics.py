@@ -94,5 +94,8 @@ class PlistSemantics(object):
     def bool(self, ast, _=None):
         return ast == "Y"
 
+    def nil(self, ast, _=None):
+        return None
+
     def _default(self, ast, _=None):
         return ast

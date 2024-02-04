@@ -18,7 +18,7 @@ entry::Entry = k:string [ '=' v:value ] ';';
 
 value = dict | array | string | hexdata | base64data | typed;
 dict::DictType = '{' @:{ entry } '}';
-array::ArrayType = '(' @:','.{ [ value ] } [ ',' ]')'; # None value is my extension.
+array::ArrayType = '(' @:','.{ value } [ ',' ]')'; # None value is my extension.
 hexdata::BinType = '<' @:{ hexpairs } '>';
 base64data::BinType = '<[' @:/[^\]]*/ ']>'; # gnustep
 typed = '<*' @:typed_belly '>'; # gnustep
@@ -50,6 +50,7 @@ float::float = [ '-' ] ( /(?i)nan/ | /(?i)inf/ |
  );
 date::DateType = /[^>"]+/;
 bool = ?'[YN]';
+nil = ?'[N]';
 
 # Use Regexp here to skip nameguard
 # Quoted values are tolerated by GNUstep
@@ -58,4 +59,5 @@ typed_belly =
     ?'U' [?'"'] @:uid [?'"'] | # my extension
     ?'R' [?'"'] @:float [?'"'] |
     ?'B' [?'"'] @:bool [?'"'] |
-    ?'D' [?'"'] @:date [?'"'] ; # 2006-01-02 15:04:05 -0700
+    ?'D' [?'"'] @:date [?'"'] | # 2006-01-02 15:04:05 -0700
+    @:nil; # null/None/nil, my extension

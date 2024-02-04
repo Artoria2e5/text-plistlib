@@ -1,0 +1,25 @@
+[project]
+name = "text_plistlib"
+version = "0.1.0"
+description = "Parser and dumper for ASCII plists from GNUStep and OpenStep"
+license = "MIT"
+author = "Mingye Wang"
+readme = "README.md"
+dependencies = ["tatsu~=5.5.0"]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+
+[tool.ruff]
+exclude = ["text_plistlib/pparser.py"]
+
+[tool.ruff.lint]
+extend-ignore = ["E203"]
+
+[mypy]
+exclude = ["text_plistlib/pparser.py"]

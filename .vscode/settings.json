@@ -1,10 +1,9 @@
 {
-    "python.linting.flake8Enabled": true,
-    "python.linting.mypyEnabled": true,
-    "python.formatting.provider": "black",
-    "python.linting.ignorePatterns": [
-        ".vscode/*.py",
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "mypy-type-checker.ignorePatterns": [
         "**/site-packages/**/*.py",
+        ".vscode/*.py",
         "text_plistlib/pparser.py"
-    ]
+    ],
+    "ruff.enable": true
 }

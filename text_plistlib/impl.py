@@ -42,6 +42,12 @@ class TextPlistParser:
         )
         return model
 
+    def ast(self, fp: IO):
+        parser = PlistParser()
+        data = fp.read()
+        if isinstance(data, bytes):
+            data = data.decode(self.encoding)
+        return parser.parse(data, semantics=None)
 
 class TextPlistWriter:
     def __init__(
@@ -100,7 +106,7 @@ class TextPlistWriter:
         _,
     ):
         if self.dialect == TextPlistDialects.PyText:
-            self.fp.write(b"")
+            self.fp.write(b"<*N>")
         elif self.fallback:
             self.fp.write(b'""')
         else:
@@ -267,4 +273,4 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         txp = TextPlistParser(dict_type=OrderedDict)
-        print(txp.parse(open(sys.argv[1])))
+        print(txp.ast(open(sys.argv[1])))

@@ -58,3 +58,9 @@ MIT/Expat license or Python Software Foundation License.
 See also
 --------
 * [go-plist](https://github.com/DHowett/go-plist)
+
+
+Useful commands 
+-----
+
+* python3 -m text_plistlib.impl ./tests/oneval.plist 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # CAVEAT UTILITOR
 #
@@ -10,15 +9,15 @@
 # Any changes you make to it will be overwritten the next time
 # the file is generated.
 
-
-from __future__ import generator_stop
+from __future__ import annotations
 
 import sys
 
 from tatsu.buffering import Buffer
 from tatsu.parsing import Parser
-from tatsu.parsing import tatsumasu, leftrec, nomemo
-from tatsu.parsing import leftrec, nomemo  # noqa
+from tatsu.parsing import tatsumasu
+from tatsu.parsing import leftrec, nomemo, isname # noqa
+from tatsu.infos import ParserConfig
 from tatsu.util import re, generic_main  # noqa
 
 
@@ -26,59 +25,39 @@ KEYWORDS = {}  # type: ignore
 
 
 class PlistBuffer(Buffer):
-    def __init__(
-        self,
-        text,
-        whitespace=None,
-        nameguard=False,
-        comments_re='/\\*.*?\\*/',
-        eol_comments_re='//.*?$',
-        ignorecase=None,
-        namechars='',
-        **kwargs
-    ):
-        super().__init__(
-            text,
-            whitespace=whitespace,
-            nameguard=nameguard,
-            comments_re=comments_re,
-            eol_comments_re=eol_comments_re,
-            ignorecase=ignorecase,
-            namechars=namechars,
-            **kwargs
+    def __init__(self, text, /, config: ParserConfig = None, **settings):
+        config = ParserConfig.new(
+            config,
+            owner=self,
+            whitespace=None,
+            nameguard=False,
+            comments_re='/\\*.*?\\*/',
+            eol_comments_re='//.*?$',
+            ignorecase=False,
+            namechars='',
+            parseinfo=False,
         )
+        config = config.replace(**settings)
+        super().__init__(text, config=config)
 
 
 class PlistParser(Parser):
-    def __init__(
-        self,
-        whitespace=None,
-        nameguard=False,
-        comments_re='/\\*.*?\\*/',
-        eol_comments_re='//.*?$',
-        ignorecase=None,
-        left_recursion=True,
-        parseinfo=True,
-        keywords=None,
-        namechars='',
-        tokenizercls=PlistBuffer,
-        **kwargs
-    ):
-        if keywords is None:
-            keywords = KEYWORDS
-        super().__init__(
-            whitespace=whitespace,
-            nameguard=nameguard,
-            comments_re=comments_re,
-            eol_comments_re=eol_comments_re,
-            ignorecase=ignorecase,
-            left_recursion=left_recursion,
-            parseinfo=parseinfo,
-            keywords=keywords,
-            namechars=namechars,
-            tokenizercls=tokenizercls,
-            **kwargs
+    def __init__(self, /, config: ParserConfig = None, **settings):
+        config = ParserConfig.new(
+            config,
+            owner=self,
+            whitespace=None,
+            nameguard=False,
+            comments_re='/\\*.*?\\*/',
+            eol_comments_re='//.*?$',
+            ignorecase=False,
+            namechars='',
+            parseinfo=False,
+            keywords=KEYWORDS,
+            start='start',
         )
+        config = config.replace(**settings)
+        super().__init__(config=config)
 
     @tatsumasu()
     def _start_(self):  # noqa
@@ -88,19 +67,29 @@ class PlistParser(Parser):
                     self._value_()
                     self.name_last_node('v')
                     self._check_eof()
+
+                    self._define(
+                        ['v'],
+                        []
+                    )
             with self._option():
                 with self._group():
 
-                    def block2():
+                    def block3():
                         self._entry_()
-                    self._closure(block2)
+                    self._closure(block3)
                     self.name_last_node('s')
                     self._check_eof()
-            self._error('expecting one of: array base64data dict entry hexdata string typed value')
-        self.ast._define(
-            ['s', 'v'],
-            []
-        )
+
+                    self._define(
+                        ['s'],
+                        []
+                    )
+            self._error(
+                'expecting one of: '
+                '<array> <base64data> <dict> <entry>'
+                '<hexdata> <string> <typed> <value>'
+            )
 
     @tatsumasu('Entry')
     def _entry_(self):  # noqa
@@ -110,8 +99,14 @@ class PlistParser(Parser):
             self._token('=')
             self._value_()
             self.name_last_node('v')
+
+            self._define(
+                ['v'],
+                []
+            )
         self._token(';')
-        self.ast._define(
+
+        self._define(
             ['k', 'v'],
             []
         )
@@ -131,7 +126,13 @@ class PlistParser(Parser):
                 self._base64data_()
             with self._option():
                 self._typed_()
-            self._error('expecting one of: " ( /[-#!$%&*+./0-9:?@A-Z^_a-z|~]+/ < <* <[ array base64data dict hexdata safechar string typed {')
+            self._error(
+                'expecting one of: '
+                '\'"\' \'(\' \'<\' \'<*\' \'<[\' \'{\' <array>'
+                '<base64data> <dict> <hexdata> <safechar>'
+                '<string> <typed>'
+                '[-#!$%&*+./0-9:?@A-Z^_a-z|~]+'
+            )
 
     @tatsumasu('DictType')
     def _dict_(self):  # noqa
@@ -151,8 +152,7 @@ class PlistParser(Parser):
             self._token(',')
 
         def block1():
-            with self._optional():
-                self._value_()
+            self._value_()
         self._gather(block1, sep1)
         self.name_last_node('@')
         with self._optional():
@@ -203,17 +203,22 @@ class PlistParser(Parser):
                     self._token('"')
                     self._cut()
 
-                    def block2():
+                    def block3():
                         self._qchar_()
-                    self._closure(block2)
+                    self._closure(block3)
                     self.name_last_node('ec')
                     self._token('"')
                     self._cut()
-            self._error('expecting one of: " /[-#!$%&*+./0-9:?@A-Z^_a-z|~]+/ safechar')
-        self.ast._define(
-            ['ec', 'sc'],
-            []
-        )
+
+                    self._define(
+                        ['ec'],
+                        []
+                    )
+            self._error(
+                'expecting one of: '
+                '\'"\' <safechar>'
+                '[-#!$%&*+./0-9:?@A-Z^_a-z|~]+'
+            )
 
     @tatsumasu()
     def _qchar_(self):  # noqa
@@ -227,11 +232,10 @@ class PlistParser(Parser):
                     self._pattern('\\\\')
                     self._esc_seq_()
                 self.name_last_node('e')
-            self._error('expecting one of: /[^"\\\\]+/ /\\\\/')
-        self.ast._define(
-            ['e', 'r'],
-            []
-        )
+            self._error(
+                'expecting one of: '
+                '[^"\\]+ \\'
+            )
 
     @tatsumasu()
     def _esc_seq_(self):  # noqa
@@ -250,7 +254,10 @@ class PlistParser(Parser):
                 self._pattern('[0-7]{,3}')
             with self._option():
                 self._pattern('.')
-            self._error('expecting one of: /(?i)u/ /./ /[0-7]{,3}/ /[abtrnvf]/ /x/')
+            self._error(
+                'expecting one of: '
+                '(?i)u . [0-7]{,3} [abtrnvf] x'
+            )
 
     @tatsumasu()
     def _number_(self):  # noqa
@@ -288,13 +295,19 @@ class PlistParser(Parser):
                             with self._option():
                                 self._token('.')
                                 self._number_()
-                            self._error('expecting one of: . number')
+                            self._error(
+                                'expecting one of: '
+                                "'.' <number>"
+                            )
                     with self._optional():
                         self._token('e')
                         with self._optional():
                             self._token('[+-]')
                             self._number_()
-                self._error('expecting one of: . /(?i)inf/ /(?i)nan/ number')
+                self._error(
+                    'expecting one of: '
+                    "'.' (?i)inf (?i)nan <number>"
+                )
 
     @tatsumasu('DateType')
     def _date_(self):  # noqa
@@ -303,6 +316,10 @@ class PlistParser(Parser):
     @tatsumasu()
     def _bool_(self):  # noqa
         self._pattern('[YN]')
+
+    @tatsumasu()
+    def _nil_(self):  # noqa
+        self._pattern('[N]')
 
     @tatsumasu()
     def _typed_belly_(self):  # noqa
@@ -347,10 +364,16 @@ class PlistParser(Parser):
                 self.name_last_node('@')
                 with self._optional():
                     self._pattern('"')
-            self._error('expecting one of: /B/ /D/ /I/ /R/ /U/')
+            with self._option():
+                self._nil_()
+                self.name_last_node('@')
+            self._error(
+                'expecting one of: '
+                '<nil> B D I R U [N]'
+            )
 
 
-class PlistSemantics(object):
+class PlistSemantics:
     def start(self, ast):  # noqa
         return ast
 
@@ -408,20 +431,25 @@ class PlistSemantics(object):
     def bool(self, ast):  # noqa
         return ast
 
+    def nil(self, ast):  # noqa
+        return ast
+
     def typed_belly(self, ast):  # noqa
         return ast
 
 
-def main(filename, start=None, **kwargs):
-    if start is None:
-        start = 'start'
+def main(filename, **kwargs):
     if not filename or filename == '-':
         text = sys.stdin.read()
     else:
         with open(filename) as f:
             text = f.read()
     parser = PlistParser()
-    return parser.parse(text, rule_name=start, filename=filename, **kwargs)
+    return parser.parse(
+        text,
+        filename=filename,
+        **kwargs
+    )
 
 
 if __name__ == '__main__':
@@ -429,9 +457,5 @@ if __name__ == '__main__':
     from tatsu.util import asjson
 
     ast = generic_main(main, PlistParser, name='Plist')
-    print('AST:')
-    print(ast)
-    print()
-    print('JSON:')
-    print(json.dumps(asjson(ast), indent=2))
-    print()
+    data = asjson(ast)
+    print(json.dumps(data, indent=2))

@@ -15,7 +15,7 @@ def patch(plistlib: ModuleType, *, handler=FMT_TEXT_HANDLER) -> ModuleType:
     FIXME: convince the mypy we are dealing with plistlib in particular.
     """
     assert type(plistlib) == ModuleType
-    if plistlib.__name__ != 'plistlib':
+    if plistlib.__name__ != "plistlib":
         warnings.warn("Patch called on non-plistlib module?", RuntimeWarning)
 
     PF = Enum("PlistFormat", "FMT_XML FMT_BINARY FMT_TEXT", module=__name__)
